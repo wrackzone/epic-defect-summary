@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>epic-defect-summary</title>
+
+    <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/async/0.2.7/async.min.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function () {
+                var app=null;Ext.define("CustomApp",{extend:"Rally.app.App",componentCls:"app",launch:function(){app=this,console.log("Hello World!"),this.addFeatureGrid()},defectColumn:{text:"Defects",width:100,renderer:function(value,metaData,record,rowIdx,colIdx,store,view){var defects=record.get("Defects");if(defects&&defects.length>0){var states=_.countBy(defects,function(d){return"Closed"!=d.get("State")?"Open":"Closed"});states.Open=void 0!==states.Open?states.Open:0,states.length=defects.length;var tpl=Ext.create("Ext.Template","{Open}/{length}",{compiled:!0});return tpl.apply(states)}return""}},addFeatureGrid:function(){var viewport=Ext.create("Ext.Viewport");Rally.data.ModelFactory.getModel({type:"HierarchicalRequirement",success:function(userStoryModel){var grid=Ext.create("Rally.ui.grid.Grid",{model:userStoryModel,listeners:{load:function(items){console.log("load",items.data.items);var features=items.data.items;async.map(features,app.getSnapshots,function(err,results){_.each(features,function(feature,i){feature.set("Defects",results[i])})})}},columnCfgs:["FormattedID","Name","Owner",app.defectColumn]});viewport.add(grid);var filterConfig={property:"Parent",operator:"=",value:null};grid.filter(filterConfig,!0,!0)}})},getSnapshots:function(record,callback){var that=this,fetch=["ObjectID","_UnformattedID","State","Priority","Severity","_ItemHierarchy","_TypeHierarchy"],hydrate=["_TypeHierarchy","State","Priority","Severity"],find={_TypeHierarchy:{$in:["Defect"]},_ProjectHierarchy:{$in:app.getContext().getProject().ObjectID},__At:"current",_ItemHierarchy:{$in:record.get("ObjectID")}},storeConfig={find:find,autoLoad:!0,pageSize:1e3,limit:"Infinity",fetch:fetch,hydrate:hydrate,listeners:{scope:this,load:function(store,snapshots,success){callback(null,snapshots)}}},snapshotStore=Ext.create("Rally.data.lookback.SnapshotStore",storeConfig)}});
+
+            Rally.launchApp('CustomApp', {
+                name:"epic-defect-summary",
+	            parentRepos:""
+            });
+
+        });
+    </script>
+
+
+    <style type="text/css">
+        .app {
+     /* Add app styles here */
+}
+
+    </style>
+</head>
+<body></body>
+</html>
